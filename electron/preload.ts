@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('kunjing', {
   isConfigured: () => ipcRenderer.invoke('app:is-configured'),
   getConfigStatus: () => ipcRenderer.invoke('app:get-config-status'),
   saveConfig: (config: Record<string, string>) => ipcRenderer.invoke('app:save-config', config),
+  testConnection: (config: Record<string, string>) => ipcRenderer.invoke('app:test-connection', config),
+  finishSetup: () => ipcRenderer.invoke('app:finish-setup'),
 
   // API 代理
   api: {

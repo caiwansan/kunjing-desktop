@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>昆仑镜 · 首次配置</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      width: 640px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 48px 40px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .logo h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 4px;
+    }
+    .logo p {
+      color: #999;
+      font-size: 14px;
+      margin-top: 6px;
+      letter-spacing: 2px;
+    }
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .step-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #555;
+      color: #777;
+      transition: all 0.3s;
+    }
+    .step-dot.active {
+      border-color: #667eea;
+      color: #fff;
+      background: rgba(102,126,234,0.3);
+      box-shadow: 0 0 16px rgba(102,126,234,0.4);
+    }
+    .step-dot.done {
+      border-color: #4caf50;
+      color: #fff;
+      background: rgba(76,175,80,0.3);
+    }
+    .step-line {
+      width: 40px;
+      align-self: center;
+      height: 2px;
+      background: #444;
+    }
+    .step-line.done { background: #4caf50; }
+
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .form-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .form-desc {
+      color: #999;
+      font-size: 14px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .field-group { margin-bottom: 20px; }
+    .field-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #bbb;
+      margin-bottom: 6px;
+    }
+    .field-group input, .field-group select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field-group input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .field-group input::placeholder { color: #666; }
+    .field-group .field-hint {
+      font-size: 12px;
+      color: #777;
+      margin-top: 4px;
+    }
+    .field-group .field-hint a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: #ccc;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+    .status-msg {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+    .status-msg.show { display: block; }
+    .status-msg.success { background: rgba(76,175,80,0.15); color: #81c784; border: 1px solid rgba(76,175,80,0.3); }
+    .status-msg.error { background: rgba(244,67,54,0.15); color: #e57373; border: 1px solid rgba(244,67,54,0.3); }
+    .status-msg.info { background: rgba(33,150,243,0.15); color: #64b5f6; border: 1px solid rgba(33,150,243,0.3); }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .secure-badge {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #666;
+    }
+    .secure-badge svg { vertical-align: middle; margin-right: 4px; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="container" id="app">
+  <!-- Logo -->
+  <div class="logo">
+    <h1>🔮 昆仑镜</h1>
+    <p>KUNJING · AIGC 影视创作工具</p>
+  </div>
+
+  <!-- 步骤指示器 -->
+  <div class="step-indicator">
+    <div class="step-dot active" id="step1-dot">1</div>
+    <div class="step-line" id="step1-line"></div>
+    <div class="step-dot" id="step2-dot">2</div>
+    <div class="step-line" id="step2-line"></div>
+    <div class="step-dot" id="step3-dot">3</div>
+    <div class="step-line" id="step3-line"></div>
+    <div class="step-dot" id="step4-dot">4</div>
+  </div>
+
+  <!-- 步骤 1: 欢迎 & API 地址 -->
+  <div class="form-section active" id="step1">
+    <div class="form-title">👋 欢迎来到昆仑镜</div>
+    <div class="form-desc">
+      首次使用需要配置 API 服务器地址和 AI 服务密钥。<br>
+      所有密钥将使用操作系统原生加密存储，安全可靠。
+    </div>
+    <div class="field-group">
+      <label>🔗 API 服务器地址</label>
+      <input type="url" id="apiHost" placeholder="https://aigc.fushtn.com" value="https://aigc.fushtn.com" />
+      <div class="field-hint">昆仑镜后端服务的完整地址</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="nextStep(1)">下一步</button>
+    </div>
+  </div>
+
+  <!-- 步骤 2: API Key（视频生成） -->
+  <div class="form-section" id="step2">
+    <div class="form-title">🎬 配置视频生成密钥</div>
+    <div class="form-desc">
+      至少选择一个视频生成平台。密钥保存后只有昆仑镜主进程可读取。
+    </div>
+    <div class="field-group">
+      <label>🐬 火山引擎 API Key <span style="color:#4caf50;font-size:12px;">（推荐）</span></label>
+      <input type="password" id="volcengineKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <div class="field-hint">用于 Seedance 系列视频模型。获取 → <a href="https://console.volcengine.com/ark" target="_blank">火山引擎控制台</a></div>
+    </div>
+    <div class="field-group">
+      <label>☁️ 阿里云 DashScope API Key</label>
+      <input type="password" id="aliyunKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <div class="field-hint">用于通义万相 Wan 系列视频模型。获取 → <a href="https://wanx.aliyun.com" target="_blank">阿里云通义万相</a></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prevStep(2)">上一步</button>
+      <button class="btn btn-primary" onclick="nextStep(2)">下一步</button>
+    </div>
+  </div>
+
+  <!-- 步骤 3: 其他配置 -->
+  <div class="form-section" id="step3">
+    <div class="form-title">⚙️ 其他配置（可选）</div>
+    <div class="form-desc">以下为可选项，留空亦可正常使用核心功能。</div>
+    <div class="field-group">
+      <label>🤖 DeepSeek API Key</label>
+      <input type="password" id="deepseekKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+      <div class="field-hint">用于剧本分析和文案优化，推荐配置。获取 → <a href="https://platform.deepseek.com" target="_blank">DeepSeek 开放平台</a></div>
+    </div>
+    <div class="field-group">
+      <label>🔐 JWT Token</label>
+      <input type="password" id="jwtToken" placeholder="可选" />
+      <div class="field-hint">若已在昆仑镜后端注册账号，填入登录令牌可解锁更多功能</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prevStep(3)">上一步</button>
+      <button class="btn btn-primary" onclick="nextStep(3)">下一步</button>
+    </div>
+  </div>
+
+  <!-- 步骤 4: 确认 & 测试 -->
+  <div class="form-section" id="step4">
+    <div class="form-title">✅ 确认配置</div>
+    <div class="form-desc">请核对以下信息，点击「测试连接」确保一切正常。</div>
+    <div id="config-summary" style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px;margin-bottom:20px;font-size:14px;line-height:2;">
+      <div>🔗 <strong>API 服务器</strong>：<span id="summary-host"></span></div>
+      <div>🐬 <strong>火山引擎</strong>：<span id="summary-volc"></span></div>
+      <div>☁️ <strong>阿里云</strong>：<span id="summary-ali"></span></div>
+      <div>🤖 <strong>DeepSeek</strong>：<span id="summary-deep"></span></div>
+      <div>🔐 <strong>JWT</strong>：<span id="summary-jwt"></span></div>
+    </div>
+    <div id="test-status" class="status-msg"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prevStep(4)">上一步</button>
+      <button class="btn btn-secondary" id="test-btn" onclick="testConnection()">🔌 测试连接</button>
+      <button class="btn btn-primary" id="finish-btn" onclick="finishSetup()">✨ 完成配置</button>
+    </div>
+    <div class="secure-badge">
+      🔒 密钥使用操作系统原生加密存储（macOS Keychain / Windows Credential Manager）
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 1
+const totalSteps = 4
+
+function updateSteps() {
+  for (let i = 1; i <= totalSteps; i++) {
+    const dot = document.getElementById(`step${i}-dot`)
+    const line = document.getElementById(`step${i}-line`)
+    const section = document.getElementById(`step${i}`)
+    dot.classList.toggle('active', i === currentStep)
+    dot.classList.toggle('done', i < currentStep)
+    section.classList.toggle('active', i === currentStep)
+    if (line) {
+      line.classList.toggle('done', i < currentStep)
+    }
+  }
+  // 步骤 4：刷新摘要
+  if (currentStep === 4) {
+    updateSummary()
+  }
+}
+
+function nextStep(from) {
+  // 步骤 1 验证 API Host
+  if (from === 1) {
+    const host = document.getElementById('apiHost').value.trim()
+    if (!host) { showStatus('test-status', '请输入 API 服务器地址', 'error'); return }
+    if (!host.startsWith('http')) { showStatus('test-status', '地址必须以 http:// 或 https:// 开头', 'error'); return }
+  }
+  currentStep = Math.min(currentStep + 1, totalSteps)
+  updateSteps()
+}
+
+function prevStep(from) {
+  currentStep = Math.max(currentStep - 1, 1)
+  updateSteps()
+}
+
+function updateSummary() {
+  const host = document.getElementById('apiHost').value.trim() || '未设置'
+  const volc = document.getElementById('volcengineKey').value.trim()
+  const ali = document.getElementById('aliyunKey').value.trim()
+  const deep = document.getElementById('deepseekKey').value.trim()
+  const jwt = document.getElementById('jwtToken').value.trim()
+
+  document.getElementById('summary-host').textContent = host
+  document.getElementById('summary-volc').textContent = volc ? '已配置 ✅' : '未配置 ❌'
+  document.getElementById('summary-ali').textContent = ali ? '已配置 ✅' : '未配置 ❌'
+  document.getElementById('summary-deep').textContent = deep ? '已配置 ✅' : '未配置 ❌'
+  document.getElementById('summary-jwt').textContent = jwt ? '已配置 ✅' : '未配置（可选）'
+}
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id)
+  el.textContent = msg
+  el.className = 'status-msg show ' + type
+}
+
+function testConnection() {
+  const btn = document.getElementById('test-btn')
+  const status = document.getElementById('test-status')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> 测试中...'
+  status.className = 'status-msg'
+
+  const config = {
+    apiHost: document.getElementById('apiHost').value.trim(),
+    volcengineApiKey: document.getElementById('volcengineKey').value.trim(),
+    aliyunApiKey: document.getElementById('aliyunKey').value.trim(),
+    deepseekApiKey: document.getElementById('deepseekKey').value.trim(),
+    jwtToken: document.getElementById('jwtToken').value.trim(),
+  }
+
+  if (window.kunjing && window.kunjing.testConnection) {
+    window.kunjing.testConnection(config).then(result => {
+      btn.disabled = false
+      btn.innerHTML = '🔌 测试连接'
+      if (result.success) {
+        showStatus('test-status', '✅ ' + (result.message || '连接成功！'), 'success')
+      } else {
+        showStatus('test-status', '❌ ' + (result.message || '连接失败'), 'error')
+      }
+    }).catch(err => {
+      btn.disabled = false
+      btn.innerHTML = '🔌 测试连接'
+      showStatus('test-status', '❌ 错误: ' + err.message, 'error')
+    })
+  } else {
+    // 非 Electron 环境（浏览器开发模式）
+    btn.disabled = false
+    btn.innerHTML = '🔌 测试连接'
+    showStatus('test-status', 'ℹ️ 浏览器模式：将使用 /api 路径访问', 'info')
+    setTimeout(() => {
+      showStatus('test-status', 'ℹ️ 打包后自动启用 Electron IPC 连接测试', 'info')
+    }, 1500)
+  }
+}
+
+function finishSetup() {
+  const btn = document.getElementById('finish-btn')
+  const status = document.getElementById('test-status')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span> 保存中...'
+
+  const config = {
+    apiHost: document.getElementById('apiHost').value.trim(),
+    volcengineApiKey: document.getElementById('volcengineKey').value.trim(),
+    aliyunApiKey: document.getElementById('aliyunKey').value.trim(),
+    deepseekApiKey: document.getElementById('deepseekKey').value.trim(),
+    jwtToken: document.getElementById('jwtToken').value.trim(),
+  }
+
+  if (window.kunjing && window.kunjing.saveConfig) {
+    window.kunjing.saveConfig(config).then(result => {
+      if (result.success) {
+        showStatus('test-status', '✅ 配置已加密保存！即将进入应用...', 'success')
+        setTimeout(() => {
+          window.kunjing.finishSetup()
+        }, 1000)
+      } else {
+        showStatus('test-status', '❌ 保存失败', 'error')
+        btn.disabled = false
+        btn.innerHTML = '✨ 完成配置'
+      }
+    }).catch(err => {
+      showStatus('test-status', '❌ 错误: ' + err.message, 'error')
+      btn.disabled = false
+      btn.innerHTML = '✨ 完成配置'
+    })
+  } else {
+    // 浏览器模式：打印到控制台并假装成功
+    console.log('【配置信息（浏览器调试）】', {
+      ...config,
+      volcengineApiKey: config.volcengineApiKey ? '***' : '',
+      aliyunApiKey: config.aliyunApiKey ? '***' : '',
+      deepseekApiKey: config.deepseekApiKey ? '***' : '',
+      jwtToken: config.jwtToken ? '***' : '',
+    })
+    showStatus('test-status', '✅ 浏览器调试模式：配置已记录', 'success')
+    btn.disabled = false
+    btn.innerHTML = '✨ 完成配置'
+  }
+}
+</script>
+</body>
+</html>

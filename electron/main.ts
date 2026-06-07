@@ -23,16 +23,15 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
     },
-    titleBarStyle: 'hiddenInset', // macOS 融合标题栏
+    titleBarStyle: 'hiddenInset',
     show: false,
   })
 
-  // 开发模式加载 Nuxt dev server，生产加载打包文件
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:3000')
-    mainWindow.webContents.openDevTools()
+  // 检查是否已配置，未配置则加载配置页
+  if (keyStore.hasApiKeys()) {
+    loadMainApp()
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../frontend-src/.output/public/index.html'))
+    loadSetupWizard()
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -44,14 +43,27 @@ function createWindow() {
   })
 }
 
+function loadMainApp() {
+  if (!mainWindow) return
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL('http://localhost:3000')
+    mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../frontend-src/.output/public/index.html'))
+  }
+}
+
+function loadSetupWizard() {
+  if (!mainWindow) return
+  mainWindow.loadFile(path.join(__dirname, '../frontend-src/setup/index.html'))
+}
+
 // ─── IPC 通道（安全桥接） ───
 
-// 初始化：检查是否已配置密钥
 ipcMain.handle('app:is-configured', async () => {
   return keyStore.hasApiKeys()
 })
 
-// 获取当前配置状态
 ipcMain.handle('app:get-config-status', async () => {
   return keyStore.getStatus()
 })
@@ -62,7 +74,25 @@ ipcMain.handle('app:save-config', async (_event, config: Record<string, string>)
   return { success: true }
 })
 
-// 代理 API 请求（前端通过此通道转发，避免跨域和密钥泄露）
+// 测试 API 连通性
+ipcMain.handle('app:test-connection', async (_event, config: Record<string, string>) => {
+  try {
+    const testProxy = new BackendProxy(new KeyStore())
+    // 临时注入配置
+    const result = await testProxy.testConnection(config.apiHost || '', config.volcengineApiKey || '')
+    return result
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+})
+
+// 配置完成后重载主应用
+ipcMain.handle('app:finish-setup', async () => {
+  loadMainApp()
+  return { success: true }
+})
+
+// 代理 API 请求
 ipcMain.handle('api:request', async (_event, { method, path: apiPath, body, params }: {
   method: string
   path: string
@@ -77,7 +107,6 @@ ipcMain.handle('api:request', async (_event, { method, path: apiPath, body, para
   }
 })
 
-// 获取可用视频模型列表
 ipcMain.handle('api:get-video-models', async () => {
   return backendProxy.getAvailableVideoModels()
 })
@@ -86,7 +115,6 @@ ipcMain.handle('api:get-video-models', async () => {
 
 app.whenReady().then(() => {
   createWindow()
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

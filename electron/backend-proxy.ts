@@ -48,8 +48,26 @@ export class BackendProxy {
     return res.json()
   }
 
-  getAvailableVideoModels(): Array<{ id: string; name: string }> {
-    // 从密钥判断可用模型
+  /**
+   * 测试与后端 API 的连通性
+   */
+  async testConnection(apiHost: string, apiKey: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${apiHost}/api/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000),
+      })
+      if (res.ok) {
+        return { success: true, message: '连接成功！' }
+      }
+      return { success: false, message: `服务器返回 ${res.status}` }
+    } catch (err: any) {
+      return { success: false, message: `无法连接: ${err.message}` }
+    }
+  }
+
+  getAvailableVideoModels(): Array<{ id: string; name: string; provider: string }> {
     const volKey = this.keyStore.get('volcengineApiKey')
     const aliyunKey = this.keyStore.get('aliyunApiKey')
     const models: Array<{ id: string; name: string; provider: string }> = []
