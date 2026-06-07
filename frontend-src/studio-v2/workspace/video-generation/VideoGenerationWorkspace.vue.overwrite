@@ -1,0 +1,327 @@
+      <!-- ====== 右侧栏：三帧卡片 + 折叠表单 + 视频生成 ====== -->
+      <div class="right-panel">
+        <!-- 未选中片段时显示提示 -->
+        <div v-if="selectedSegmentIndex < 0" class="empty-state">
+          <div class="empty-icon">🎬</div>
+          <div class="empty-text">从左侧选择一个片段开始编辑</div>
+        </div>
+
+        <!-- 选中片段时显示详情 -->
+        <div v-else class="segment-detail">
+          <!-- ====== 三张帧图卡片（横向排列） ====== -->
+          <div class="frame-cards-row">
+            <!-- 首帧图卡片 -->
+            <div class="frame-card">
+              <div class="frame-card-header">🎬 首帧图（第0秒）</div>
+              <!-- 已生成的帧图 -->
+              <div class="frame-preview-area">
+                <img v-if="segmentFirstFrameUrls[selectedSegmentIndex]" :src="segmentFirstFrameUrls[selectedSegmentIndex]" class="frame-preview-img" />
+                <div v-else class="frame-preview-empty">未生成</div>
+              </div>
+              <!-- 画面描述 -->
+              <label class="frame-field-label">📝 画面描述</label>
+              <textarea
+                class="frame-field-input"
+                :value="frameDescriptions[selectedSegmentIndex]?.first || ''"
+                @input="updateFrameDesc(selectedSegmentIndex, 'first', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="根据AI优化结果自动填入帧画面描述…"
+                rows="2"
+              ></textarea>
+              <!-- 引用图片缩略图 -->
+              <div class="frame-refs" v-if="segmentCharImages[selectedSegmentIndex]?.length || segmentSceneImages[selectedSegmentIndex]?.length || segmentPropImages[selectedSegmentIndex]?.length">
+                <div class="frame-ref-label">🖼️ 参考图：</div>
+                <div class="frame-ref-thumbs">
+                  <img v-for="(url, fi) in segmentCharImages[selectedSegmentIndex]" :key="'c'+fi" :src="url" class="frame-ref-thumb" title="角色图" />
+                  <img v-for="(url, fi) in segmentSceneImages[selectedSegmentIndex]" :key="'s'+fi" :src="url" class="frame-ref-thumb" title="场景图" />
+                  <img v-for="(url, fi) in segmentPropImages[selectedSegmentIndex]" :key="'p'+fi" :src="url" class="frame-ref-thumb" title="道具图" />
+                </div>
+              </div>
+              <!-- 提示词框 -->
+              <label class="frame-field-label">🤖 图生图 Prompt</label>
+              <textarea
+                class="frame-field-input prompt"
+                :value="framePrompts[selectedSegmentIndex]?.first?.prompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'first', 'prompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="图生图用的 prompt…"
+                rows="2"
+              ></textarea>
+              <label class="frame-field-label">🚫 Negative Prompt</label>
+              <textarea
+                class="frame-field-input neg"
+                :value="framePrompts[selectedSegmentIndex]?.first?.negativePrompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'first', 'negativePrompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="负面提示词…"
+                rows="1"
+              ></textarea>
+              <!-- 按钮行 -->
+              <div class="frame-actions">
+                <button
+                  class="btn-opt-prompt"
+                  :disabled="frameOpting[selectedSegmentIndex]?.first"
+                  @click="optimizeFramePrompt(selectedSegmentIndex, 'first')"
+                >
+                  {{ frameOpting[selectedSegmentIndex]?.first ? '⏳ 优化中…' : '🤖 AI优化提示词' }}
+                </button>
+                <button
+                  class="btn-img2img"
+                  :disabled="frameGenning[selectedSegmentIndex]?.first"
+                  @click="generateFrameImage(selectedSegmentIndex, 'first')"
+                >
+                  {{ frameGenning[selectedSegmentIndex]?.first ? '⏳ 生成中…' : '🎨 图生图' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 中帧图卡片 -->
+            <div class="frame-card">
+              <div class="frame-card-header">🎬 中帧图（第{{ Math.floor(((segments[selectedSegmentIndex]?.duration || 8)/2)) }}秒）</div>
+              <div class="frame-preview-area">
+                <img v-if="segmentMidFrameUrls[selectedSegmentIndex]" :src="segmentMidFrameUrls[selectedSegmentIndex]" class="frame-preview-img" />
+                <div v-else class="frame-preview-empty">未生成</div>
+              </div>
+              <label class="frame-field-label">📝 画面描述</label>
+              <textarea
+                class="frame-field-input"
+                :value="frameDescriptions[selectedSegmentIndex]?.mid || ''"
+                @input="updateFrameDesc(selectedSegmentIndex, 'mid', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="根据AI优化结果自动填入帧画面描述…"
+                rows="2"
+              ></textarea>
+              <div class="frame-refs" v-if="segmentCharImages[selectedSegmentIndex]?.length || segmentSceneImages[selectedSegmentIndex]?.length || segmentPropImages[selectedSegmentIndex]?.length">
+                <div class="frame-ref-label">🖼️ 参考图：</div>
+                <div class="frame-ref-thumbs">
+                  <img v-for="(url, fi) in segmentCharImages[selectedSegmentIndex]" :key="'c'+fi" :src="url" class="frame-ref-thumb" title="角色图" />
+                  <img v-for="(url, fi) in segmentSceneImages[selectedSegmentIndex]" :key="'s'+fi" :src="url" class="frame-ref-thumb" title="场景图" />
+                  <img v-for="(url, fi) in segmentPropImages[selectedSegmentIndex]" :key="'p'+fi" :src="url" class="frame-ref-thumb" title="道具图" />
+                </div>
+              </div>
+              <label class="frame-field-label">🤖 图生图 Prompt</label>
+              <textarea
+                class="frame-field-input prompt"
+                :value="framePrompts[selectedSegmentIndex]?.mid?.prompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'mid', 'prompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="图生图用的 prompt…"
+                rows="2"
+              ></textarea>
+              <label class="frame-field-label">🚫 Negative Prompt</label>
+              <textarea
+                class="frame-field-input neg"
+                :value="framePrompts[selectedSegmentIndex]?.mid?.negativePrompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'mid', 'negativePrompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="负面提示词…"
+                rows="1"
+              ></textarea>
+              <div class="frame-actions">
+                <button
+                  class="btn-opt-prompt"
+                  :disabled="frameOpting[selectedSegmentIndex]?.mid"
+                  @click="optimizeFramePrompt(selectedSegmentIndex, 'mid')"
+                >
+                  {{ frameOpting[selectedSegmentIndex]?.mid ? '⏳ 优化中…' : '🤖 AI优化提示词' }}
+                </button>
+                <button
+                  class="btn-img2img"
+                  :disabled="frameGenning[selectedSegmentIndex]?.mid"
+                  @click="generateFrameImage(selectedSegmentIndex, 'mid')"
+                >
+                  {{ frameGenning[selectedSegmentIndex]?.mid ? '⏳ 生成中…' : '🎨 图生图' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 尾帧图卡片 -->
+            <div class="frame-card">
+              <div class="frame-card-header">🎬 尾帧图（最后一秒）</div>
+              <div class="frame-preview-area">
+                <img v-if="segmentLastFrameUrls[selectedSegmentIndex]" :src="segmentLastFrameUrls[selectedSegmentIndex]" class="frame-preview-img" />
+                <div v-else class="frame-preview-empty">未生成</div>
+              </div>
+              <label class="frame-field-label">📝 画面描述</label>
+              <textarea
+                class="frame-field-input"
+                :value="frameDescriptions[selectedSegmentIndex]?.last || ''"
+                @input="updateFrameDesc(selectedSegmentIndex, 'last', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="根据AI优化结果自动填入帧画面描述…"
+                rows="2"
+              ></textarea>
+              <div class="frame-refs" v-if="segmentCharImages[selectedSegmentIndex]?.length || segmentSceneImages[selectedSegmentIndex]?.length || segmentPropImages[selectedSegmentIndex]?.length">
+                <div class="frame-ref-label">🖼️ 参考图：</div>
+                <div class="frame-ref-thumbs">
+                  <img v-for="(url, fi) in segmentCharImages[selectedSegmentIndex]" :key="'c'+fi" :src="url" class="frame-ref-thumb" title="角色图" />
+                  <img v-for="(url, fi) in segmentSceneImages[selectedSegmentIndex]" :key="'s'+fi" :src="url" class="frame-ref-thumb" title="场景图" />
+                  <img v-for="(url, fi) in segmentPropImages[selectedSegmentIndex]" :key="'p'+fi" :src="url" class="frame-ref-thumb" title="道具图" />
+                </div>
+              </div>
+              <label class="frame-field-label">🤖 图生图 Prompt</label>
+              <textarea
+                class="frame-field-input prompt"
+                :value="framePrompts[selectedSegmentIndex]?.last?.prompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'last', 'prompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="图生图用的 prompt…"
+                rows="2"
+              ></textarea>
+              <label class="frame-field-label">🚫 Negative Prompt</label>
+              <textarea
+                class="frame-field-input neg"
+                :value="framePrompts[selectedSegmentIndex]?.last?.negativePrompt || ''"
+                @input="updateFramePrompt(selectedSegmentIndex, 'last', 'negativePrompt', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="负面提示词…"
+                rows="1"
+              ></textarea>
+              <div class="frame-actions">
+                <button
+                  class="btn-opt-prompt"
+                  :disabled="frameOpting[selectedSegmentIndex]?.last"
+                  @click="optimizeFramePrompt(selectedSegmentIndex, 'last')"
+                >
+                  {{ frameOpting[selectedSegmentIndex]?.last ? '⏳ 优化中…' : '🤖 AI优化提示词' }}
+                </button>
+                <button
+                  class="btn-img2img"
+                  :disabled="frameGenning[selectedSegmentIndex]?.last"
+                  @click="generateFrameImage(selectedSegmentIndex, 'last')"
+                >
+                  {{ frameGenning[selectedSegmentIndex]?.last ? '⏳ 生成中…' : '🎨 图生图' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ====== 折叠面板：AIGC 编辑内容 ====== -->
+          <details class="collapse-section">
+            <summary class="collapse-header">📝 AIGC 编辑内容</summary>
+
+            <!-- 可编辑的 AIGC 表单 -->
+            <div class="aigc-form" style="margin-top:12px;">
+              <div class="field-group">
+                <label class="field-label">📝 剧情描述</label>
+                <textarea
+                  class="field-input narrative"
+                  :value="getSegmentData(selectedSegmentIndex).narrative"
+                  @input="updateSegmentField(selectedSegmentIndex, 'narrative', ($event.target as HTMLTextAreaElement).value)"
+                  placeholder="输入这段剧情的文本描述…"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label">💬 对话文本</label>
+                <textarea
+                  class="field-input dialogue"
+                  :value="getSegmentData(selectedSegmentIndex).dialogue"
+                  @input="updateSegmentField(selectedSegmentIndex, 'dialogue', ($event.target as HTMLTextAreaElement).value)"
+                  placeholder="输入对话/台词（将对口型生成）…"
+                  rows="2"
+                ></textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label">🔊 特效音效描述</label>
+                <textarea
+                  class="field-input effects"
+                  :value="getSegmentData(selectedSegmentIndex).effects"
+                  @input="updateSegmentField(selectedSegmentIndex, 'effects', ($event.target as HTMLTextAreaElement).value)"
+                  placeholder="输入特效和音效的描述…"
+                  rows="2"
+                ></textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label">🚫 负面提示词</label>
+                <textarea
+                  class="field-input negative"
+                  :value="getSegmentData(selectedSegmentIndex).negativePrompt"
+                  @input="updateSegmentField(selectedSegmentIndex, 'negativePrompt', ($event.target as HTMLTextAreaElement).value)"
+                  placeholder="防止画面崩坏（如：扭曲、异常肢体、多指等）…"
+                  rows="1"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- 生成视频按钮 -->
+            <div class="detail-header" style="margin-top:12px;">
+              <span class="detail-title">视频生成</span>
+              <button class="btn-generate-video" :disabled="generatingVideo" @click="generateCurrentVideo">
+                {{ generatingVideo ? '⏳ 生成中…' : '🎬 生成视频' }}
+              </button>
+            </div>
+
+            <!-- AI 优化参考 -->
+            <div v-if="optimizedResults[selectedSegmentIndex]" class="optimized-result" style="margin-top:12px;">
+              <div class="opt-header">
+                <span class="opt-header-label">AI 优化参考</span>
+                <button class="btn-apply-opt" @click="applyOptimizedToForm(selectedSegmentIndex)">📋 应用到表单</button>
+              </div>
+              <div class="opt-section">
+                <div class="opt-label">📝 优化后剧情</div>
+                <pre class="opt-text">{{ optimizedResults[selectedSegmentIndex].narrative }}</pre>
+              </div>
+              <div class="opt-section">
+                <div class="opt-label">💬 优化后对话</div>
+                <pre class="opt-text">{{ optimizedResults[selectedSegmentIndex].dialogue }}</pre>
+              </div>
+              <div class="opt-section">
+                <div class="opt-label">🔊 优化后特效音效</div>
+                <pre class="opt-text">{{ optimizedResults[selectedSegmentIndex].effects }}</pre>
+              </div>
+              <div v-if="optimizedResults[selectedSegmentIndex].optimizedShots" class="shots-timeline">
+                <div class="shots-timeline-header">逐秒镜头设计（{{ optimizedResults[selectedSegmentIndex].optimizedShots.length }}秒）</div>
+                <div v-for="shot in optimizedResults[selectedSegmentIndex].optimizedShots" :key="shot.second" class="shot-item">
+                  <div class="shot-second">{{ formatShotSecond(shot.second) }}</div>
+                  <div class="shot-details">
+                    <div class="shot-detail"><span class="shot-label">🎥 镜头:</span> {{ shot.camera }}</div>
+                    <div class="shot-detail"><span class="shot-label">🏃 动作:</span> {{ shot.action }}</div>
+                    <div v-if="shot.expression" class="shot-detail"><span class="shot-label">😊 表情:</span> {{ shot.expression }}</div>
+                    <div v-if="shot.dialogue" class="shot-detail"><span class="shot-label">💬 台词:</span> {{ shot.dialogue }}</div>
+                    <div class="shot-detail"><span class="shot-label">🔊 特效:</span> {{ shot.fx }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="empty-optimize" style="margin-top:12px;">
+              <div class="empty-text">点击左侧卡片的 🎬 AI 优化视频脚本 按钮生成逐秒脚本</div>
+            </div>
+
+            <!-- 已生成的视频 -->
+            <div v-if="generatedVideos[selectedSegmentIndex]" class="generated-video-section" style="margin-top:12px;">
+              <div class="gen-label">已生成视频</div>
+              <video :src="generatedVideos[selectedSegmentIndex]" controls class="preview-video"></video>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 图片替换选择器弹窗 ====== -->
+    <div v-if="pickerState.show" class="picker-overlay" @click.self="closePicker">
+      <div class="picker-dialog">
+        <div class="picker-header">
+          <span class="picker-title">选择{{ {char:'角色图',scene:'场景图',prop:'道具图',firstFrame:'首帧图'}[pickerState.mode] }}</span>
+          <button class="picker-close" @click="closePicker">✕</button>
+        </div>
+        <div class="picker-grid" v-if="pickerState.images.length > 0">
+          <div v-for="(img, pi) in pickerState.images" :key="pi" class="picker-item" @click="pickImage(img.url)">
+            <img :src="img.url" class="picker-thumb" />
+            <span class="picker-label">{{ img.label }}</span>
+          </div>
+        </div>
+        <div v-else class="picker-empty">暂无可用图片，请先在素材库生成</div>
+      </div>
+    </div>
+
+    <!-- ====== 帧图替换选择器弹窗 ====== -->
+    <div v-if="framePickerShow" class="picker-overlay" @click.self="framePickerShow=false">
+      <div class="picker-dialog">
+        <div class="picker-header">
+          <span class="picker-title">选择{{ {firstFrame:'首帧图',midFrame:'中帧图',lastFrame:'尾帧图'}[framePickerMode] }}</span>
+          <button class="picker-close" @click="framePickerShow=false">✕</button>
+        </div>
+        <div class="picker-grid" v-if="framePickerImages.length > 0">
+          <div v-for="(img, pi) in framePickerImages" :key="pi" class="picker-item" @click="pickFrameImage(img.url)">
+            <img :src="img.url" class="picker-thumb" />
+            <span class="picker-label">{{ img.label }}</span>
+          </div>
+        </div>
+        <div v-else class="picker-empty">暂无可用图片</div>
+      </div>
+    </div>
+  </div>
+</template>
