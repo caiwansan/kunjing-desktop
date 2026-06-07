@@ -8,9 +8,5 @@ Thumbs.db
 frontend-src/node_modules/
 frontend-src/.nuxt/
 frontend-src/.output/
-electron/
-scripts/
-build.sh
-tsconfig.electron.json
-npm-debug.log*
 frontend-src/nuxt.config.ts.bak
+npm-debug.log*
