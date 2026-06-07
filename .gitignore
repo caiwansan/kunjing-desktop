@@ -10,3 +10,6 @@ frontend-src/.nuxt/
 frontend-src/.output/
 frontend-src/nuxt.config.ts.bak
 npm-debug.log*
+electron/dist/
+*.map
+frontend-src/node_modules

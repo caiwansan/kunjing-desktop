@@ -2,15 +2,15 @@
   "name": "kunjing-desktop",
   "version": "1.0.0",
   "description": "昆仑镜桌面版 - AIGC 影视创作工具",
-  "main": "electron/main.js",
+  "main": "electron/dist/main.js",
+  "author": "caiwansan",
+  "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development electron .",
     "build": "npm run build:frontend && npm run build:electron",
-    "build:frontend": "cd frontend-src && npm install && npx nuxi generate",
-    "build:electron": "tsc --project tsconfig.electron.json && electron-builder",
-    "package:mac": "electron-builder --mac",
-    "package:win": "electron-builder --win",
-    "package:linux": "electron-builder --linux"
+    "build:frontend": "cd frontend-src && npx nuxi build --prerender=false",
+    "build:electron": "npx tsc --project tsconfig.electron.json",
+    "package:linux": "npm run build:frontend && npm run build:electron && npx electron-builder --linux"
   },
   "build": {
     "appId": "com.caiwansan.kunjing",
@@ -19,26 +19,20 @@
       "output": "release"
     },
     "files": [
-      "electron/**/*",
+      "electron/dist/**/*",
       "frontend-src/.output/public/**/*",
       "package.json"
     ],
-    "mac": {
-      "category": "public.app-category.video",
-      "target": ["dmg", "zip"],
-      "icon": "assets/icon.icns"
-    },
-    "win": {
-      "target": ["nsis"],
-      "icon": "assets/icon.ico"
-    },
+    "extraResources": [
+      {
+        "from": "frontend-src/setup",
+        "to": "setup"
+      }
+    ],
     "linux": {
       "target": ["AppImage"],
-      "icon": "assets/icon.png"
-    },
-    "nsis": {
-      "oneClick": true,
-      "installerIcon": "assets/icon.ico"
+      "icon": "assets/icon.png",
+      "category": "Video"
     }
   },
   "devDependencies": {
