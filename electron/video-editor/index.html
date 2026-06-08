@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>昆仑镜 - 本地视频剪辑</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn btn-ghost" onclick="navigateHome()">← 返回</button>
+        <span class="topbar-title">✂️ 本地视频剪辑</span>
+      </div>
+      <div class="topbar-center">
+        <button class="btn btn-ghost" onclick="openFiles()">📂 打开文件</button>
+        <button class="btn btn-ghost" onclick="removeSelected()">🗑 移除选中</button>
+        <button class="btn btn-ghost" onclick="clearAll()">清空</button>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary" onclick="exportVideo()">📀 导出</button>
+      </div>
+    </header>
+
+    <!-- 主体 -->
+    <div class="main">
+      <!-- 左侧素材列表 -->
+      <aside class="panel panel-assets">
+        <div class="panel-header">
+          <span>📦 素材</span>
+          <button class="btn btn-sm" onclick="openFiles()">➕</button>
+        </div>
+        <div class="asset-list" id="assetList">
+          <div class="asset-empty">点击 📂 打开文件<br/>或拖拽文件到此</div>
+        </div>
+        <div class="panel-footer" id="assetStats">
+          <span>共 <span id="totalAssets">0</span> 个文件</span>
+        </div>
+      </aside>
+
+      <!-- 中间：预览 + 时间轴 -->
+      <section class="panel panel-main">
+        <!-- 预览 -->
+        <div class="preview-area">
+          <div class="preview-toolbar">
+            <button class="btn btn-sm" onclick="togglePlay()" id="playBtn">▶</button>
+            <input type="range" class="seek-bar" id="seekBar" min="0" max="100" value="0" oninput="onSeek(this.value)">
+            <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+            <span class="badge" id="resolutionBadge">—</span>
+          </div>
+          <div class="preview-canvas-wrap" id="previewWrap">
+            <canvas id="previewCanvas"></canvas>
+            <video id="previewVideo" style="display:none" muted playsinline preload="auto"></video>
+          </div>
+        </div>
+
+        <!-- 时间轴 -->
+        <div class="timeline-area">
+          <div class="timeline-toolbar">
+            <span class="timeline-label">时间轴</span>
+            <label class="timeline-control">
+              缩放：<input type="range" min="10" max="200" value="50" oninput="onZoomChange(this.value)" class="zoom-slider">
+              <span id="zoomLabel">50</span>px/s
+            </label>
+          </div>
+          <div class="timeline-ruler" id="timelineRuler">
+            <canvas id="rulerCanvas"></canvas>
+          </div>
+          <div class="timeline-tracks" id="timelineTracks" ondrop="onDrop(event)" ondragover="onDragOver(event)">
+            <!-- 轨道渲染在这里 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧属性面板 -->
+      <aside class="panel panel-props">
+        <div class="panel-header"><span>🔧 属性</span></div>
+        <div class="props-content" id="propsContent">
+          <div class="props-empty">选择片段<br/>查看/编辑属性</div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 导出弹窗 -->
+    <div class="modal-overlay" id="exportModal" style="display:none">
+      <div class="modal">
+        <div class="modal-header">
+          <span>📀 导出视频</span>
+          <button class="btn btn-sm" onclick="closeExportModal()">✕</button>
+        </div>
+        <div class="modal-body" id="exportBody">
+          <div class="form-group">
+            <label>输出格式</label>
+            <select id="exportFormat">
+              <option value="mp4">MP4 (H.264)</option>
+              <option value="webm">WebM (VP9)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>分辨率</label>
+            <select id="exportResolution">
+              <option value="1080p">1080p</option>
+              <option value="720p" selected>720p</option>
+              <option value="480p">480p</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>帧率</label>
+            <select id="exportFps">
+              <option value="30">30 FPS</option>
+              <option value="24">24 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>质量</label>
+            <select id="exportQuality">
+              <option value="high">高</option>
+              <option value="medium" selected>中</option>
+              <option value="low">低</option>
+            </select>
+          </div>
+          <!-- 进度 -->
+          <div class="export-progress" id="exportProgress" style="display:none">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-text" id="progressText">0%</span>
+          </div>
+          <div class="export-log" id="exportLog"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeExportModal()">取消</button>
+          <button class="btn btn-primary" id="exportBtn" onclick="startExport()">开始导出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="editor.js"></script>
+</body>
+</html>

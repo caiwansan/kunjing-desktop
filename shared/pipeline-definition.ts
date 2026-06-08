@@ -16,9 +16,10 @@ export type PipelineStageId =
   | 'scene-design'
   | 'props-design'
   | 'video-generation'
+  | 'dubbing-render'
   | 'voice-generation'
   | 'music-generation'
-  | 'final-render'
+  | 'video-editor'
 
 // ─── Stage 状态值（前后端共用） ───
 export type PipelineStageStatus =
@@ -111,10 +112,21 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
     parallelizable: false,
   },
   {
+    id: 'dubbing-render',
+    title: '配音合成',
+    icon: '🎙️',
+    order: 6,
+    retryable: true,
+    visible: true,
+    dependsOn: ['video-generation'],
+    optional: false,
+    parallelizable: false,
+  },
+  {
     id: 'voice-generation',
     title: '广告创作',
     icon: '📺',
-    order: 6,
+    order: 7,
     retryable: true,
     visible: true,
     dependsOn: [],
@@ -125,7 +137,7 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
     id: 'music-generation',
     title: '音乐生成',
     icon: '🎵',
-    order: 7,
+    order: 8,
     retryable: true,
     visible: true,
     dependsOn: [],
@@ -133,15 +145,15 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
     parallelizable: true,
   },
   {
-    id: 'final-render',
-    title: '合成输出',
-    icon: '✨',
-    order: 8,
-    retryable: false,
+    id: 'video-editor',
+    title: '视频剪辑',
+    icon: '✂️',
+    order: 9,
+    retryable: true,
     visible: true,
-    dependsOn: ['video-generation', 'voice-generation', 'music-generation'],
-    optional: false,
-    parallelizable: false,
+    dependsOn: [],
+    optional: true,
+    parallelizable: true,
   },
 ]
 
