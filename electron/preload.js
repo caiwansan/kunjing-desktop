@@ -70,4 +70,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNavigate: (callback) => {
     ipcRenderer.on('navigate', (_event, path) => callback(path))
   },
+
+  // ── 后端状态监听 ──
+  onBackendStatus: (callback) => {
+    ipcRenderer.on('backend-status', (_event, status) => callback(status))
+  },
 })

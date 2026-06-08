@@ -164,6 +164,28 @@ async function startConvert() {
   }
 }
 
+// ─── 监听后端在线通知 ───
+if (api.onBackendStatus) {
+  api.onBackendStatus((status) => {
+    if (status.online) {
+      const badge = document.querySelector('.status-badge')
+      if (badge) {
+        badge.className = 'status-badge online'
+        badge.textContent = '⚡ 在线'
+      }
+      // 显示按钮切换到在线版
+      const headerRight = document.querySelector('.header-right')
+      if (headerRight) {
+        const switchBtn = document.createElement('button')
+        switchBtn.className = 'btn btn-primary'
+        switchBtn.textContent = '🚀 切换到在线版'
+        switchBtn.onclick = () => { window.location.href = status.host || 'https://aigc.fushtn.com' }
+        headerRight.appendChild(switchBtn)
+      }
+    }
+  })
+}
+
 // ─── 系统初始化 ───
 async function init() {
   // 检测 FFmpeg

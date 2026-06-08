@@ -88,22 +88,22 @@ async function createWindow() {
     await mainWindow.loadURL('http://localhost:3333')
     mainWindow.webContents.openDevTools()
   } else {
-    // 检测后端是否可用
-    isOnlineMode = await checkBackendOnline()
-    console.log(`[desktop] 后端检测: ${isOnlineMode ? '在线' : '离线'}`)
-
-    if (isOnlineMode) {
-      await mainWindow.loadURL(API_HOST)
+    // 不阻塞启动：直接加载本地主页
+    const localPath = path.join(__dirname, 'video-editor', 'launcher.html')
+    if (fs.existsSync(localPath)) {
+      await mainWindow.loadFile(localPath)
     } else {
-      // 离线模式：加载本地主页
-      const localPath = path.join(__dirname, 'video-editor', 'launcher.html'))
-      if (fs.existsSync(localPath)) {
-        await mainWindow.loadFile(localPath)
-      } else {
-        // 回退到独立视频编辑器
-        await mainWindow.loadFile(path.join(__dirname, 'video-editor', 'index.html'))
-      }
+      await mainWindow.loadFile(path.join(__dirname, 'video-editor', 'index.html'))
     }
+
+    // 后台检测在线版，通知前端状态
+    checkBackendOnline().then((online) => {
+      isOnlineMode = online
+      console.log(`[desktop] 后端检测: ${online ? '在线' : '离线'}`)
+      if (online && mainWindow) {
+        mainWindow.webContents.send('backend-status', { online: true, host: API_HOST })
+      }
+    })
   }
 
   mainWindow.on('closed', () => { mainWindow = null })
