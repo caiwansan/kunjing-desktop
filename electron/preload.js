@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: () => ipcRenderer.invoke('get-app-info').then(info => info.version),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   navigateHome: () => ipcRenderer.invoke('navigate-home'),
+  switchToOnline: () => ipcRenderer.invoke('switch-to-online'),
+  switchToLocal: () => ipcRenderer.invoke('switch-to-local'),
 
   // ── 文件对话框 ──
   openVideoFiles: () => ipcRenderer.invoke('dialog:open-video'),

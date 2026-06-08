@@ -6,6 +6,12 @@
  *   - FFmpeg 路径：extraResources/bin/ffmpeg.exe
  *   - 视频裁剪/拼接/变速/导出
  *   - 实时进度推送
+ *
+ * Phase 4：在线/离线自适应
+ *   - 启动时检测 API 后端是否可用
+ *   - 可用 → 加载在线 SPA（兼容 1.0 版）
+ *   - 不可用 → 加载本地主页（纯本地模式）
+ *   - 菜单一键切换模式
  */
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
@@ -20,9 +26,11 @@ const { autoUpdater } = require('electron-updater')
 let mainWindow = null
 let backendProcess = null
 let exportProcess = null // 当前导出进程，用于取消
+let isOnlineMode = false // 当前是否在线模式
 const isDev = process.argv.includes('--dev')
 const isPackaged = app.isPackaged
 const APP_NAME = '昆仑镜'
+const API_HOST = 'https://aigc.fushtn.com'
 
 // ─── 用户数据目录（用于本地存储） ───
 const userDataPath = app.getPath('userData')
@@ -61,17 +69,41 @@ const WINDOW_CONFIG = {
   },
 }
 
+// ─── 检测后端是否在线 ───
+async function checkBackendOnline() {
+  return new Promise((resolve) => {
+    const req = http.get(`${API_HOST}/api/health`, { timeout: 5000 }, (res) => {
+      resolve(res.statusCode === 200)
+    })
+    req.on('error', () => resolve(false))
+    req.on('timeout', () => { req.destroy(); resolve(false) })
+  })
+}
+
 // ─── 创建主窗口 ───
 async function createWindow() {
   mainWindow = new BrowserWindow(WINDOW_CONFIG)
 
-  // 加载页面
   if (isDev) {
     await mainWindow.loadURL('http://localhost:3333')
     mainWindow.webContents.openDevTools()
   } else {
-    const indexPath = path.join(__dirname, 'web', 'index.html')
-    await mainWindow.loadFile(indexPath)
+    // 检测后端是否可用
+    isOnlineMode = await checkBackendOnline()
+    console.log(`[desktop] 后端检测: ${isOnlineMode ? '在线' : '离线'}`)
+
+    if (isOnlineMode) {
+      await mainWindow.loadURL(API_HOST)
+    } else {
+      // 离线模式：加载本地主页
+      const localPath = path.join(__dirname, 'video-editor', 'launcher.html'))
+      if (fs.existsSync(localPath)) {
+        await mainWindow.loadFile(localPath)
+      } else {
+        // 回退到独立视频编辑器
+        await mainWindow.loadFile(path.join(__dirname, 'video-editor', 'index.html'))
+      }
+    }
   }
 
   mainWindow.on('closed', () => { mainWindow = null })
@@ -93,23 +125,28 @@ function setupMenu() {
       ],
     },
     {
-      label: '工具',
+      label: '模式',
       submenu: [
         {
-          label: '视频剪辑',
-          accelerator: 'CmdOrCtrl+E',
-          click: () => mainWindow?.webContents.send('navigate', '/workspace/video-editor'),
+          label: '尝试连接在线版',
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: () => switchMode('online'),
         },
         {
-          label: '本地视频剪辑（独立版）',
-          click: () => openVideoEditor(),
+          label: '切换到本地模式',
+          accelerator: 'CmdOrCtrl+Shift+L',
+          click: () => switchMode('local'),
         },
         { type: 'separator' },
         {
-          label: '大模型设置',
-          click: () => mainWindow?.webContents.send('navigate', '/user/center'),
+          label: '本地视频剪辑',
+          accelerator: 'CmdOrCtrl+E',
+          click: () => openVideoEditor(),
         },
-        { label: '客服支持', click: () => mainWindow?.webContents.send('navigate', '/customer-service') },
+        {
+          label: '本地工具台',
+          click: () => openLocalLauncher(),
+        },
       ],
     },
     {
@@ -132,6 +169,39 @@ function setupMenu() {
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+// ─── 切换在线/本地模式 ───
+async function switchMode(mode) {
+  if (!mainWindow) return
+
+  if (mode === 'online') {
+    const online = await checkBackendOnline()
+    if (online) {
+      isOnlineMode = true
+      mainWindow.loadURL(API_HOST)
+    } else {
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: '无法连接',
+        message: `${API_HOST} 无法访问，请确认网络连接后重试。`,
+      })
+    }
+  } else {
+    isOnlineMode = false
+    openLocalLauncher()
+  }
+}
+
+// ─── 打开本地工具台 ───
+function openLocalLauncher() {
+  if (!mainWindow) return
+  const launcherPath = path.join(__dirname, 'video-editor', 'launcher.html')
+  if (fs.existsSync(launcherPath)) {
+    mainWindow.loadFile(launcherPath)
+  } else {
+    openVideoEditor()
+  }
 }
 
 // ─── 打开独立视频编辑器页面 ───
@@ -164,9 +234,21 @@ function setupIpcHandlers() {
     if (!mainWindow) return
     if (isDev) {
       mainWindow.loadURL('http://localhost:3333')
+    } else if (isOnlineMode) {
+      mainWindow.loadURL(API_HOST)
     } else {
-      mainWindow.loadFile(path.join(__dirname, 'web', 'index.html'))
+      mainWindow.loadFile(path.join(__dirname, 'video-editor', 'launcher.html'))
     }
+  })
+
+  // ── 切换到在线模式 ──
+  ipcMain.handle('switch-to-online', async () => {
+    await switchMode('online')
+  })
+
+  // ── 切换到本地模式 ──
+  ipcMain.handle('switch-to-local', async () => {
+    await switchMode('local')
   })
 
   // ── 文件对话框 ──

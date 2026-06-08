@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>昆仑镜 - 本地模式</title>
+<link rel="stylesheet" href="launcher.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部 -->
+    <header class="header">
+      <div class="header-left">
+        <img src="../web/logo.png" class="logo" alt="昆仑镜">
+        <div class="brand">
+          <h1>昆仑镜</h1>
+          <span class="subtitle">本地模式</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="status-badge offline">⚡ 离线</span>
+        <button class="btn btn-outline" onclick="tryOnline()">🔄 尝试连接在线版</button>
+      </div>
+    </header>
+
+    <!-- 快速工具面板 -->
+    <main class="main">
+      <section class="hero">
+        <h2>欢迎使用昆仑镜桌面版</h2>
+        <p class="hero-desc">当前为本地模式，所有功能在本地运行，无需网络。</p>
+        <p class="hero-hint">在线版恢复后，可通过「模式 → 尝试连接在线版」切换。</p>
+      </section>
+
+      <!-- 工具卡片 -->
+      <section class="tools-grid">
+        <div class="tool-card primary" onclick="openEditor()">
+          <div class="card-icon">✂️</div>
+          <div class="card-body">
+            <h3>本地视频剪辑</h3>
+            <p>多轨时间轴 · 裁剪分割 · FFmpeg 导出</p>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+
+        <div class="tool-card" onclick="openVideoInfo()">
+          <div class="card-icon">📊</div>
+          <div class="card-body">
+            <h3>视频信息查看</h3>
+            <p>编码格式 · 分辨率 · 帧率 · 时长</p>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+
+        <div class="tool-card" onclick="openConverter()">
+          <div class="card-icon">🔄</div>
+          <div class="card-body">
+            <h3>格式转换</h3>
+            <p>MP4 / WebM / AVI · 压缩 · 缩放</p>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+
+        <div class="tool-card" onclick="openThumbnail()">
+          <div class="card-icon">🖼</div>
+          <div class="card-body">
+            <h3>缩略图提取</h3>
+            <p>从视频中提取一帧保存为图片</p>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </section>
+
+      <!-- 最近文件 -->
+      <section class="recent-section" id="recentSection" style="display:none">
+        <h3>📂 最近文件</h3>
+        <div class="recent-list" id="recentList"></div>
+      </section>
+
+      <!-- 系统信息 -->
+      <section class="info-section">
+        <h3>系统信息</h3>
+        <div class="info-grid" id="systemInfo">
+          <div class="info-item"><span class="info-label">版本</span><span>1.0.1</span></div>
+          <div class="info-item"><span class="info-label">FFmpeg</span><span id="ffmpegStatus">检测中...</span></div>
+          <div class="info-item"><span class="info-label">平台</span><span id="platformInfo">—</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 视频信息弹窗 -->
+  <div class="modal-overlay" id="infoModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <span>📊 视频信息</span>
+        <button class="btn btn-sm" onclick="closeModal('infoModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" onclick="selectAndShowInfo()">选择视频文件</button>
+        </div>
+        <div id="videoInfoResult" class="info-result">
+          选择一个视频文件查看详细信息
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 格式转换弹窗 -->
+  <div class="modal-overlay" id="convertModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <span>🔄 格式转换</span>
+        <button class="btn btn-sm" onclick="closeModal('convertModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>源文件</label>
+          <button class="btn" onclick="selectConvertSource()">选择文件</button>
+          <span id="convertSource" style="margin-left:8px;color:var(--text-muted)">未选择</span>
+        </div>
+        <div class="form-group">
+          <label>输出格式</label>
+          <select id="convertFormat">
+            <option value="mp4">MP4 (H.264)</option>
+            <option value="webm">WebM (VP9)</option>
+            <option value="avi">AVI</option>
+            <option value="gif">GIF</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>质量</label>
+          <select id="convertQuality">
+            <option value="high">高 (CRF 18)</option>
+            <option value="medium" selected>中 (CRF 23)</option>
+            <option value="low">低 (CRF 28)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>缩放</label>
+          <select id="convertScale">
+            <option value="original" selected>原始大小</option>
+            <option value="1920:1080">1080p</option>
+            <option value="1280:720">720p</option>
+            <option value="854:480">480p</option>
+          </select>
+        </div>
+        <div class="export-progress" id="convertProgress" style="display:none">
+          <div class="progress-bar"><div class="progress-fill" id="convertProgressFill"></div></div>
+          <span class="progress-text" id="convertProgressText">0%</span>
+        </div>
+        <button class="btn btn-primary" id="convertBtn" onclick="startConvert()" disabled>开始转换</button>
+        <div id="convertResult" class="info-result" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="launcher.js"></script>
+</body>
+</html>
